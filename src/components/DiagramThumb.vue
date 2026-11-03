@@ -1,22 +1,21 @@
 <script setup lang="ts">
 defineProps<{
   thumbnail?: string
-  code?: string
   voltageLevel?: string
 }>()
 </script>
 
 <template>
   <div class="diagram-thumb">
-    <img v-if="thumbnail" :src="thumbnail" :alt="code || '接线图缩略图'" loading="lazy" />
+    <img v-if="thumbnail" :src="thumbnail" alt="接线图缩略图" loading="lazy" />
     <svg v-else viewBox="0 0 320 190" class="placeholder" aria-hidden="true">
       <defs>
-        <pattern :id="`dot-grid-${code || 'default'}`" width="16" height="16" patternUnits="userSpaceOnUse">
+        <pattern id="dot-grid-default" width="16" height="16" patternUnits="userSpaceOnUse">
           <circle cx="1" cy="1" r="0.7" fill="#cdd9d7" />
         </pattern>
       </defs>
       <rect width="320" height="190" fill="#fbfcfb" />
-      <rect width="320" height="190" :fill="`url(#dot-grid-${code || 'default'})`" />
+      <rect width="320" height="190" fill="url(#dot-grid-default)" />
       <g stroke="#283a40" fill="none" stroke-width="1.4" stroke-linecap="round">
         <path d="M34 48H286" stroke-width="4" />
         <path d="M67 48V63M141 48V63M215 48V63M263 48V63" />

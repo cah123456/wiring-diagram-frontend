@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, type Component } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -9,13 +9,11 @@ import {
   CircleDot,
   Clock3,
   Copy,
-  FilePlus2,
   MoreHorizontal,
   PencilLine,
   Plus,
   RefreshCw,
   Search,
-  Sparkles,
   Trash2,
   Workflow,
 } from 'lucide-vue-next'
@@ -31,8 +29,7 @@ import {
   updateDiagramMeta,
 } from '../api/diagrams'
 import { getApiError } from '../api/http'
-import type { BayConfig, DiagramDetail, DiagramStats, DiagramSummary } from '../types/diagram'
-import { createId } from '../utils/document'
+import type { DiagramDetail, DiagramStats, DiagramSummary } from '../types/diagram'
 
 const router = useRouter()
 
@@ -56,71 +53,7 @@ const standardsOpen = ref(false)
 const newDialogOpen = ref(false)
 const busyId = ref<number | null>(null)
 
-const initialMode = ref<'blank' | 'config'>('config')
-const initialBays = ref<BayConfig[]>([])
-const initialName = ref('')
-
 let searchTimer: number | undefined
-
-interface StartTemplate {
-  key: string
-  title: string
-  description: string
-  icon: Component
-  mode: 'blank' | 'config'
-  bays: BayConfig[]
-  name: string
-}
-
-const templates: StartTemplate[] = [
-  {
-    key: 'blank',
-    title: '空白 A3 图框',
-    description: '从零开始，自由布置设备与导线',
-    icon: FilePlus2,
-    mode: 'blank',
-    bays: [],
-    name: '',
-  },
-  {
-    key: 'distribution',
-    title: '10kV 配电柜列',
-    description: '进线 + PT + 两面馈线，一键生成',
-    icon: Workflow,
-    mode: 'config',
-    bays: [
-      { key: 'distribution-incoming', type: 'incoming', count: 1 },
-      { key: 'distribution-pt', type: 'pt', count: 1 },
-      { key: 'distribution-outgoing', type: 'outgoing', count: 2 },
-    ],
-    name: '10kV 配电室一次接线图',
-  },
-  {
-    key: 'incoming',
-    title: '双电源进线',
-    description: '双进线 + PT 柜的单母线系统',
-    icon: Boxes,
-    mode: 'config',
-    bays: [
-      { key: 'incoming-main', type: 'incoming', count: 2 },
-      { key: 'incoming-pt', type: 'pt', count: 1 },
-    ],
-    name: '双电源进线一次接线图',
-  },
-  {
-    key: 'capacitor',
-    title: '无功补偿间隔',
-    description: '进线 + 电容器柜，快速建立示例',
-    icon: Sparkles,
-    mode: 'config',
-    bays: [
-      { key: 'capacitor-incoming', type: 'incoming', count: 1 },
-      { key: 'capacitor-bank', type: 'capacitor', count: 1 },
-      { key: 'capacitor-outgoing', type: 'outgoing', count: 1 },
-    ],
-    name: '10kV 无功补偿接线图',
-  },
-]
 
 const serviceText = computed(() => (apiOnline.value ? '数据库已连接' : '服务未连接'))
 
@@ -148,12 +81,12 @@ const loadDiagrams = async (showSkeleton = false) => {
   try {
     const result = await listDiagrams({
       keyword: keyword.value.trim(),
-      page: page.value - 1,
-      size: pageSize,
+      pageNum: page.value,
+      pageSize,
     })
-    diagrams.value = result.items
+    diagrams.value = result.records
     total.value = result.total
-    totalPages.value = result.totalPages
+    totalPages.value = result.pages
     apiOnline.value = true
   } catch (loadError) {
     apiOnline.value = false
@@ -185,19 +118,8 @@ const openEditor = (id: number) => {
   router.push({ name: 'editor', params: { id } })
 }
 
-const openNewDialog = (
-  mode: 'blank' | 'config' = 'config',
-  bays: BayConfig[] = [],
-  name = '',
-) => {
-  initialMode.value = mode
-  initialBays.value = bays.map((bay) => ({ ...bay, key: createId('bay') }))
-  initialName.value = name
+const openNewDialog = () => {
   newDialogOpen.value = true
-}
-
-const useTemplate = (template: (typeof templates)[number]) => {
-  openNewDialog(template.mode, template.bays, template.name)
 }
 
 const handleCreated = (detail: DiagramDetail) => {
@@ -328,16 +250,13 @@ onMounted(async () => {
             </h1>
             <p class="hero-desc">
               拖放断路器、互感器、接地开关等标准符号，连接端口自动生成正交导线。
-              保存图纸、追溯版本，随时回到画布继续编辑。
+              从空白画布开始，保存图纸后随时回来继续编辑。
             </p>
             <div class="hero-actions">
               <el-button size="large" class="hero-primary" @click="openNewDialog()">
                 新建接线图
                 <ArrowRight :size="16" />
               </el-button>
-              <button type="button" class="hero-secondary" @click="useTemplate(templates[1]!)">
-                查看柜列模板
-              </button>
             </div>
           </div>
 
@@ -453,35 +372,6 @@ onMounted(async () => {
           </button>
         </section>
 
-        <section class="quickstart">
-          <div class="section-head">
-            <div>
-              <span class="section-kicker">START FAST</span>
-              <h2>快速开始</h2>
-            </div>
-            <p>从常用开关柜配置开始，进入画布再按项目调整。</p>
-          </div>
-          <div class="template-grid">
-            <button
-              v-for="(template, index) in templates"
-              :key="template.key"
-              type="button"
-              class="template-card"
-              @click="useTemplate(template)"
-            >
-              <span class="template-index">0{{ index + 1 }}</span>
-              <span class="template-icon">
-                <component :is="template.icon" :size="19" :stroke-width="1.7" />
-              </span>
-              <span class="template-copy">
-                <strong>{{ template.title }}</strong>
-                <small>{{ template.description }}</small>
-              </span>
-              <ArrowRight :size="15" class="template-arrow" />
-            </button>
-          </div>
-        </section>
-
         <section class="library">
           <div class="section-head library-head">
             <div>
@@ -492,7 +382,7 @@ onMounted(async () => {
               <el-input
                 v-model="keyword"
                 class="search-input"
-                placeholder="搜索图纸名称或编号"
+                placeholder="搜索图纸名称或说明"
                 clearable
               >
                 <template #prefix>
@@ -538,13 +428,11 @@ onMounted(async () => {
             >
               <DiagramThumb
                 :thumbnail="diagram.thumbnail"
-                :code="diagram.code"
                 :voltage-level="diagram.voltageLevel"
               />
               <div class="card-body">
                 <div class="card-title-row">
                   <div class="card-title-copy">
-                    <span class="card-code">{{ diagram.code }}</span>
                     <h3>{{ diagram.name }}</h3>
                   </div>
                   <el-dropdown
@@ -587,7 +475,7 @@ onMounted(async () => {
                   <span><Clock3 :size="12" /> {{ formatRelative(diagram.updatedAt) }}</span>
                 </div>
                 <div class="card-footer">
-                  <span class="revision">R{{ diagram.revision }}</span>
+                  <span class="card-tag">{{ diagram.voltageLevel || 'A3' }} · 一次接线图</span>
                   <span>继续编辑 <ArrowRight :size="13" /></span>
                 </div>
               </div>
@@ -620,7 +508,7 @@ onMounted(async () => {
               {{
                 keyword
                   ? '换一个关键词试试，或清除搜索条件。'
-                  : '从空白画布开始，或使用柜列模板快速生成第一张图纸。'
+                  : '新建一张空白画布，从左侧符号库开始绘制第一张接线图。'
               }}
             </p>
             <el-button v-if="!keyword" type="primary" @click="openNewDialog()">
@@ -648,13 +536,7 @@ onMounted(async () => {
       </div>
     </main>
 
-    <NewDiagramDialog
-      v-model="newDialogOpen"
-      :initial-mode="initialMode"
-      :initial-bays="initialBays"
-      :initial-name="initialName"
-      @created="handleCreated"
-    />
+    <NewDiagramDialog v-model="newDialogOpen" @created="handleCreated" />
     <StandardsDrawer v-model="standardsOpen" />
   </div>
 </template>
@@ -898,21 +780,6 @@ onMounted(async () => {
   background: #ffffff;
 }
 
-.hero-secondary {
-  padding: 8px 0;
-  color: rgba(226, 241, 238, 0.74);
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid rgba(194, 225, 219, 0.3);
-  cursor: pointer;
-  font-size: 12px;
-  transition: color 0.18s;
-}
-
-.hero-secondary:hover {
-  color: #fff;
-}
-
 .hero-visual {
   position: relative;
   z-index: 1;
@@ -1117,10 +984,6 @@ onMounted(async () => {
   gap: 20px;
 }
 
-.quickstart {
-  margin-top: 30px;
-}
-
 .section-kicker {
   display: block;
   margin-bottom: 5px;
@@ -1142,93 +1005,6 @@ onMounted(async () => {
   margin: 0 0 2px;
   color: var(--muted);
   font-size: 11px;
-}
-
-.template-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 13px;
-}
-
-.template-card {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  overflow: hidden;
-  padding: 14px;
-  color: var(--ink);
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  cursor: pointer;
-  text-align: left;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s,
-    transform 0.2s;
-}
-
-.template-card:hover {
-  border-color: #aecfc9;
-  box-shadow: 0 8px 24px rgba(25, 65, 65, 0.07);
-  transform: translateY(-1px);
-}
-
-.template-index {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  color: #dfe7e6;
-  font-family: var(--font-mono);
-  font-size: 8px;
-}
-
-.template-icon {
-  display: grid;
-  width: 35px;
-  height: 35px;
-  flex: none;
-  place-items: center;
-  color: var(--accent);
-  background: #eef6f4;
-  border-radius: 7px;
-}
-
-.template-copy {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.template-copy strong {
-  overflow: hidden;
-  font-size: 11.5px;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.template-copy small {
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 9.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.template-arrow {
-  flex: none;
-  color: #b1bebd;
-  transition: transform 0.18s;
-}
-
-.template-card:hover .template-arrow {
-  color: var(--accent);
-  transform: translateX(2px);
 }
 
 .library {
@@ -1347,15 +1123,6 @@ onMounted(async () => {
   flex: 1;
 }
 
-.card-code {
-  display: block;
-  margin-bottom: 3px;
-  color: #95a4a4;
-  font-family: var(--font-mono);
-  font-size: 8px;
-  letter-spacing: 0.06em;
-}
-
 .card-title-copy h3 {
   overflow: hidden;
   margin: 0;
@@ -1433,7 +1200,7 @@ onMounted(async () => {
   opacity: 1;
 }
 
-.revision {
+.card-tag {
   font-family: var(--font-mono);
   font-size: 8.5px;
 }
@@ -1595,10 +1362,6 @@ onMounted(async () => {
   .library-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .template-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 820px) {
@@ -1642,8 +1405,7 @@ onMounted(async () => {
     border-right: 1px solid var(--line);
   }
 
-  .library-grid,
-  .template-grid {
+  .library-grid {
     grid-template-columns: 1fr;
   }
 

@@ -7,7 +7,6 @@ import {
   Check,
   ChevronDown,
   Download,
-  History,
   LoaderCircle,
   Pencil,
   Save,
@@ -21,7 +20,6 @@ const emit = defineEmits<{
   back: []
   save: []
   export: [format: 'svg' | 'png']
-  versions: []
   standards: []
 }>()
 
@@ -137,10 +135,6 @@ const handleExport = (command: string | number | object) => {
           <span v-if="store.voltageLevel" class="voltage-chip mono">{{ store.voltageLevel }}</span>
         </div>
         <div class="document-meta">
-          <span class="code mono">{{ store.diagramCode || 'UNSAVED' }}</span>
-          <span class="meta-sep">/</span>
-          <span class="revision mono">R{{ store.revision }}</span>
-          <span class="meta-sep">/</span>
           <span class="save-state" :class="{ dirty: store.dirty }">
             <span class="state-dot" />
             {{ savedLabel }}
@@ -158,16 +152,6 @@ const handleExport = (command: string | number | object) => {
       >
         <BookOpen :size="14" />
         <span>规范</span>
-      </button>
-
-      <button
-        type="button"
-        class="toolbar-button"
-        title="版本历史"
-        @click="emit('versions')"
-      >
-        <History :size="14" />
-        <span>版本</span>
       </button>
 
       <el-dropdown trigger="click" placement="bottom-end" @command="handleExport">
@@ -363,20 +347,6 @@ const handleExport = (command: string | number | object) => {
   margin-top: 1px;
   color: #9aa9aa;
   font-size: 9px;
-}
-
-.code {
-  color: #7d9194;
-  font-size: 8.5px;
-  letter-spacing: 0.03em;
-}
-
-.meta-sep {
-  color: #ccd6d5;
-}
-
-.revision {
-  font-size: 8.5px;
 }
 
 .save-state {

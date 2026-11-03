@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { AlertTriangle, LoaderCircle, RefreshCw } from 'lucide-vue-next'
 import BrandMark from '../components/BrandMark.vue'
@@ -11,12 +10,10 @@ import EditorTopBar from '../components/editor/EditorTopBar.vue'
 import InspectorPanel from '../components/editor/InspectorPanel.vue'
 import StatusBar from '../components/editor/StatusBar.vue'
 import SymbolPalette from '../components/editor/SymbolPalette.vue'
-import VersionDrawer from '../components/editor/VersionDrawer.vue'
 import StandardsDrawer from '../components/StandardsDrawer.vue'
 import { getDiagram } from '../api/diagrams'
 import { getApiError } from '../api/http'
 import { useEditorStore } from '../stores/editor'
-import type { DiagramDetail } from '../types/diagram'
 import { exportPng, exportSvg, renderThumbnail } from '../utils/exporter'
 
 interface StageApi {
@@ -34,7 +31,6 @@ const stageRef = useTemplateRef<StageApi>('stageRef')
 
 const loading = ref(true)
 const loadError = ref('')
-const versionsOpen = ref(false)
 const standardsOpen = ref(false)
 
 let loadRequest = 0
@@ -69,7 +65,7 @@ const loadDiagram = async () => {
 
   if (!Number.isFinite(id) || id <= 0) {
     loading.value = false
-    loadError.value = '图纸编号无效，无法打开该图纸。'
+    loadError.value = '图纸 ID 无效，无法打开该图纸。'
     return
   }
 
@@ -91,9 +87,6 @@ const loadDiagram = async () => {
   if (succeeded) await fitStage()
 }
 
-const isConflictError = (error: unknown): boolean =>
-  axios.isAxiosError(error) && error.response?.status === 409
-
 const saveCurrent = async () => {
   if (!store.diagramId || store.saving || saveInFlight) return
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
@@ -108,32 +101,11 @@ const saveCurrent = async () => {
     console.warn('生成图纸缩略图失败，将仅保存图纸数据。', error)
   }
 
-  const note = store.lastAction
-    ? `编辑保存 · ${store.lastAction}`
-    : `编辑保存 · ${store.doc.nodes.length} 台设备 / ${store.doc.edges.length} 条导线`
-
   try {
-    const detail = await store.save(thumbnail, note)
-    ElMessage.success(`图纸已保存 · R${detail.revision}`)
+    await store.save(thumbnail)
+    ElMessage.success('图纸已保存')
   } catch (error) {
-    if (isConflictError(error)) {
-      try {
-        await ElMessageBox.confirm(
-          '服务端已存在更新版本，当前本地修改无法直接保存。可以加载服务端最新版本，或留在当前页面复制需要保留的内容。',
-          '保存冲突',
-          {
-            confirmButtonText: '加载最新版本',
-            cancelButtonText: '留在当前页',
-            type: 'warning',
-          },
-        )
-        await loadDiagram()
-      } catch {
-        // Keep the local unsaved document when the user cancels.
-      }
-    } else {
-      ElMessage.error(getApiError(error))
-    }
+    ElMessage.error(getApiError(error))
   } finally {
     saveInFlight = false
   }
@@ -162,11 +134,6 @@ const handleExport = async (format: 'svg' | 'png') => {
   } catch (error) {
     ElMessage.error(getApiError(error))
   }
-}
-
-const handleRestored = async (detail: DiagramDetail) => {
-  store.loadDocument(detail)
-  await fitStage()
 }
 
 const goBack = () => {
@@ -336,7 +303,6 @@ onBeforeUnmount(() => {
         @back="goBack"
         @save="saveCurrent"
         @export="handleExport"
-        @versions="versionsOpen = true"
         @standards="standardsOpen = true"
       />
 
@@ -359,7 +325,6 @@ onBeforeUnmount(() => {
         <InspectorPanel />
       </div>
 
-      <VersionDrawer v-model="versionsOpen" @restored="handleRestored" />
       <StandardsDrawer v-model="standardsOpen" />
     </template>
   </div>

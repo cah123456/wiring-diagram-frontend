@@ -972,7 +972,7 @@ defineExpose({ fitView, zoomIn, zoomOut, zoomReset })
         >
           <rect x="-218" y="-92" width="436" height="184" rx="10" />
           <text class="empty-title" y="-16">从左侧符号库拖入设备开始绘制</text>
-          <text class="empty-sub" y="14">或使用「配置生成」快速建立单母线一次接线图</text>
+          <text class="empty-sub" y="14">拖入符号后，在设备端口之间拖拽即可连接导线</text>
           <text class="empty-meta" y="52">GRIDLINE · GB/T 4728 / IEC 60617</text>
         </g>
 

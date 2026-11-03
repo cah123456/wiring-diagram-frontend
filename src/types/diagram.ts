@@ -178,12 +178,10 @@ export interface DiagramDocument {
 export interface DiagramSummary {
   id: number
   name: string
-  code: string
   voltageLevel?: string
   description?: string
   nodeCount: number
   edgeCount: number
-  revision: number
   thumbnail?: string
   createdAt: string
   updatedAt: string
@@ -200,44 +198,11 @@ export interface DiagramStats {
   updatedRecently: number
 }
 
-export interface PageResponse<T> {
-  items: T[]
+/** 后端 MyBatis-Plus IPage 的分页返回结构。 */
+export interface PageVO<T> {
+  records: T[]
   total: number
-  page: number
   size: number
-  totalPages: number
-}
-
-export interface VersionSummary {
-  id: number
-  revision: number
-  changeNote?: string
-  createdAt: string
-}
-
-export interface VersionDetail extends VersionSummary {
-  document: DiagramDocument
-}
-
-export interface BayConfig {
-  key: string
-  type: BayKind
-  count: number
-}
-
-export type BayKind =
-  | 'incoming'
-  | 'outgoing'
-  | 'busTie'
-  | 'pt'
-  | 'capacitor'
-  | 'transformer'
-
-export interface GeneratorConfig {
-  title: string
-  voltageLevel: string
-  description: string
-  bays: BayConfig[]
-  includeEarthSwitch: boolean
-  includeArrester: boolean
+  current: number
+  pages: number
 }

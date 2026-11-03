@@ -4,9 +4,7 @@ import type {
   DiagramDocument,
   DiagramStats,
   DiagramSummary,
-  PageResponse,
-  VersionDetail,
-  VersionSummary,
+  PageVO,
 } from '../types/diagram'
 
 export interface CreateDiagramPayload {
@@ -17,10 +15,8 @@ export interface CreateDiagramPayload {
 }
 
 export interface SaveDiagramPayload {
-  revision: number
   document: DiagramDocument
   thumbnail?: string
-  changeNote?: string
 }
 
 /**
@@ -31,10 +27,10 @@ export interface SaveDiagramPayload {
  */
 export const listDiagrams = async (params: {
   keyword?: string
-  page?: number
-  size?: number
-}): Promise<PageResponse<DiagramSummary>> => {
-  const response = await http.get<ApiResponse<PageResponse<DiagramSummary>>>('/diagrams', { params })
+  pageNum?: number
+  pageSize?: number
+}): Promise<PageVO<DiagramSummary>> => {
+  const response = await http.get<ApiResponse<PageVO<DiagramSummary>>>('/diagrams', { params })
   return unwrap(response.data)
 }
 
@@ -77,29 +73,4 @@ export const duplicateDiagram = async (id: number): Promise<DiagramDetail> => {
 export const deleteDiagram = async (id: number): Promise<void> => {
   const response = await http.delete<ApiResponse<null>>(`/diagrams/${id}`)
   ensureSuccess(response.data)
-}
-
-export const listVersions = async (id: number): Promise<VersionSummary[]> => {
-  const response = await http.get<ApiResponse<VersionSummary[]>>(`/diagrams/${id}/versions`)
-  return unwrap(response.data)
-}
-
-export const getVersion = async (id: number, versionId: number): Promise<VersionDetail> => {
-  const response = await http.get<ApiResponse<VersionDetail>>(
-    `/diagrams/${id}/versions/${versionId}`,
-  )
-  return unwrap(response.data)
-}
-
-export const restoreVersion = async (
-  id: number,
-  versionId: number,
-  revision: number,
-): Promise<DiagramDetail> => {
-  const response = await http.post<ApiResponse<DiagramDetail>>(
-    `/diagrams/${id}/versions/${versionId}/restore`,
-    null,
-    { params: { revision } },
-  )
-  return unwrap(response.data)
 }

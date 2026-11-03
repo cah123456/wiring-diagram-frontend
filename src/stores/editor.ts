@@ -33,10 +33,8 @@ const HISTORY_LIMIT = 80
 export const useEditorStore = defineStore('editor', () => {
   const diagramId = ref<number | null>(null)
   const diagramName = ref('')
-  const diagramCode = ref('')
   const voltageLevel = ref('')
   const doc = ref<DiagramDocument>(blankDocument())
-  const revision = ref(1)
   const savedAt = ref('')
   const savedJson = ref(JSON.stringify(doc.value))
   const loading = ref(false)
@@ -518,10 +516,8 @@ export const useEditorStore = defineStore('editor', () => {
   const loadDocument = (detail: DiagramDetail) => {
     diagramId.value = detail.id
     diagramName.value = detail.name
-    diagramCode.value = detail.code
     voltageLevel.value = detail.voltageLevel ?? ''
     doc.value = normalizeDocument(detail.document)
-    revision.value = detail.revision
     savedAt.value = detail.updatedAt
     savedJson.value = JSON.stringify(doc.value)
     past.value = []
@@ -537,10 +533,8 @@ export const useEditorStore = defineStore('editor', () => {
   const startNewDocument = (document: DiagramDocument, name: string) => {
     diagramId.value = null
     diagramName.value = name
-    diagramCode.value = ''
     voltageLevel.value = document.meta.voltageLevel
     doc.value = normalizeDocument(document)
-    revision.value = 1
     savedJson.value = JSON.stringify(doc.value)
     savedAt.value = ''
     past.value = []
@@ -553,31 +547,25 @@ export const useEditorStore = defineStore('editor', () => {
   const attachDiagramDetail = (detail: DiagramDetail) => {
     diagramId.value = detail.id
     diagramName.value = detail.name
-    diagramCode.value = detail.code
     voltageLevel.value = detail.voltageLevel ?? ''
-    revision.value = detail.revision
     savedAt.value = detail.updatedAt
     savedJson.value = JSON.stringify(doc.value)
     past.value = []
     future.value = []
   }
 
-  const save = async (thumbnail?: string, changeNote?: string) => {
+  const save = async (thumbnail?: string) => {
     if (!diagramId.value) throw new Error('图纸尚未创建')
     saving.value = true
     const submitted = cloneDocument(doc.value)
     const submittedJson = JSON.stringify(submitted)
     try {
       const detail = await saveDiagram(diagramId.value, {
-        revision: revision.value,
         document: submitted,
         thumbnail,
-        changeNote,
       })
-      revision.value = detail.revision
       savedAt.value = detail.updatedAt
       diagramName.value = detail.name
-      diagramCode.value = detail.code
       voltageLevel.value = detail.voltageLevel ?? ''
       // Keep the editor dirty if the user changed the drawing while the request was in flight.
       savedJson.value = submittedJson
@@ -732,10 +720,8 @@ export const useEditorStore = defineStore('editor', () => {
   return {
     diagramId,
     diagramName,
-    diagramCode,
     voltageLevel,
     doc,
-    revision,
     savedAt,
     loading,
     saving,

@@ -1,22 +1,18 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ArrowRight, Check, Layers3, Plus, Trash2 } from 'lucide-vue-next'
-import type { BayConfig, BayKind, DiagramDetail } from '../types/diagram'
-import { BAY_OPTIONS, generateDiagram } from '../utils/generator'
-import { blankDocument, createId } from '../utils/document'
+import { ArrowRight, Layers3 } from 'lucide-vue-next'
+import type { DiagramDetail } from '../types/diagram'
+import { blankDocument } from '../utils/document'
 import { createDiagram } from '../api/diagrams'
 import { getApiError } from '../api/http'
 
 const props = withDefaults(
   defineProps<{
-    initialMode?: 'blank' | 'config'
-    initialBays?: BayConfig[]
     initialName?: string
     initialVoltage?: string
   }>(),
   {
-    initialMode: 'config',
     initialVoltage: '10kV',
     initialName: '',
   },
@@ -27,62 +23,20 @@ const emit = defineEmits<{
 }>()
 
 const visible = defineModel<boolean>({ required: true })
-const mode = ref<'blank' | 'config'>('config')
 const name = ref('')
 const voltageLevel = ref('10kV')
 const description = ref('')
-const bays = ref<BayConfig[]>([])
-const includeEarthSwitch = ref(true)
-const includeArrester = ref(false)
 const creating = ref(false)
 
-const defaultBays = (): BayConfig[] => [
-  { key: createId('bay'), type: 'incoming', count: 1 },
-  { key: createId('bay'), type: 'pt', count: 1 },
-  { key: createId('bay'), type: 'outgoing', count: 2 },
-]
-
 const resetForm = () => {
-  mode.value = props.initialMode
   voltageLevel.value = props.initialVoltage || '10kV'
   name.value = props.initialName || `${voltageLevel.value} 配电室一次接线图`
   description.value = ''
-  bays.value = props.initialBays?.length
-    ? props.initialBays.map((bay) => ({ ...bay, key: createId('bay') }))
-    : defaultBays()
-  includeEarthSwitch.value = true
-  includeArrester.value = false
 }
 
 watch(visible, (open) => {
   if (open) resetForm()
 })
-
-const totalBays = computed(() => bays.value.reduce((sum, bay) => sum + bay.count, 0))
-const canAddBay = computed(() => bays.value.length < 6 && totalBays.value < 5)
-
-const bayLabel = (kind: BayKind) =>
-  BAY_OPTIONS.find((option) => option.value === kind)?.label ?? kind
-
-const addBay = () => {
-  if (!canAddBay.value) return
-  const remaining = Math.max(1, 5 - totalBays.value)
-  bays.value.push({ key: createId('bay'), type: 'outgoing', count: Math.min(1, remaining) })
-}
-
-const removeBay = (key: string) => {
-  if (bays.value.length <= 1) return
-  bays.value = bays.value.filter((bay) => bay.key !== key)
-}
-
-const normalizeCounts = () => {
-  let remaining = 5
-  for (const bay of bays.value) {
-    bay.count = Math.max(1, Math.min(bay.count, remaining))
-    remaining -= bay.count
-    if (remaining <= 0) remaining = 0
-  }
-}
 
 const submit = async () => {
   const trimmedName = name.value.trim()
@@ -90,35 +44,11 @@ const submit = async () => {
     ElMessage.warning('请填写图纸名称')
     return
   }
-  if (mode.value === 'config') {
-    if (totalBays.value < 1) {
-      ElMessage.warning('请至少配置一个开关柜间隔')
-      return
-    }
-    if (totalBays.value > 5) {
-      ElMessage.warning('自动生成最多支持 5 面柜，更多间隔可在编辑器中手动添加')
-      return
-    }
-  }
 
   creating.value = true
   try {
-    let document
-    if (mode.value === 'blank') {
-      document = blankDocument(trimmedName)
-      document.meta.voltageLevel = voltageLevel.value
-    } else {
-      normalizeCounts()
-      document = generateDiagram({
-        title: trimmedName,
-        voltageLevel: voltageLevel.value,
-        description: description.value.trim(),
-        bays: bays.value,
-        includeEarthSwitch: includeEarthSwitch.value,
-        includeArrester: includeArrester.value,
-      })
-    }
-
+    const document = blankDocument(trimmedName)
+    document.meta.voltageLevel = voltageLevel.value
     const detail = await createDiagram({
       name: trimmedName,
       voltageLevel: voltageLevel.value,
@@ -134,14 +64,12 @@ const submit = async () => {
     creating.value = false
   }
 }
-
-const modeName = computed(() => (mode.value === 'blank' ? '空白画布' : '按柜列生成'))
 </script>
 
 <template>
   <el-dialog
     v-model="visible"
-    width="760px"
+    width="560px"
     class="new-diagram-dialog"
     :close-on-click-modal="!creating"
     :close-on-press-escape="!creating"
@@ -155,39 +83,12 @@ const modeName = computed(() => (mode.value === 'blank' ? '空白画布' : '按�
         </div>
         <div>
           <h3>新建接线图</h3>
-          <p>选择空白画布，或按开关柜柜列配置自动生成初始图。</p>
+          <p>创建后直接从空白画布开始绘制。</p>
         </div>
       </div>
     </template>
 
     <div class="dialog-body scroll-thin">
-      <div class="mode-switch" role="tablist">
-        <button
-          type="button"
-          :class="{ active: mode === 'config' }"
-          @click="mode = 'config'"
-        >
-          <span class="mode-index">01</span>
-          <span>
-            <strong>按柜列配置生成</strong>
-            <small>自动生成母线、间隔和常用设备</small>
-          </span>
-          <Check v-if="mode === 'config'" :size="15" />
-        </button>
-        <button
-          type="button"
-          :class="{ active: mode === 'blank' }"
-          @click="mode = 'blank'"
-        >
-          <span class="mode-index">02</span>
-          <span>
-            <strong>从空白画布开始</strong>
-            <small>A3 图框与标题栏，自由拖拽绘制</small>
-          </span>
-          <Check v-if="mode === 'blank'" :size="15" />
-        </button>
-      </div>
-
       <div class="form-grid">
         <label class="field span-2">
           <span>图纸名称 <b>*</b></span>
@@ -213,69 +114,7 @@ const modeName = computed(() => (mode.value === 'blank' ? '空白画布' : '按�
         </label>
       </div>
 
-      <section v-if="mode === 'config'" class="config-section">
-        <div class="section-head">
-          <div>
-            <h4>柜列配置</h4>
-            <p>按 10kV 单母线柜列自动排布，最多 5 面柜。</p>
-          </div>
-          <span class="bay-counter" :class="{ warning: totalBays > 5 }">
-            {{ totalBays }} / 5 面柜
-          </span>
-        </div>
-
-        <div class="bay-table">
-          <div class="bay-table-head">
-            <span>柜型</span>
-            <span>数量</span>
-            <span />
-          </div>
-          <div v-for="(bay, index) in bays" :key="bay.key" class="bay-row">
-            <span class="row-index">{{ String(index + 1).padStart(2, '0') }}</span>
-            <el-select v-model="bay.type" class="bay-type">
-              <el-option
-                v-for="option in BAY_OPTIONS"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              >
-                <div class="bay-option">
-                  <strong>{{ option.label }}</strong>
-                  <small>{{ option.description }}</small>
-                </div>
-              </el-option>
-            </el-select>
-            <el-input-number v-model="bay.count" :min="1" :max="5" size="default" />
-            <el-button
-              text
-              class="remove-button"
-              :disabled="bays.length <= 1"
-              @click="removeBay(bay.key)"
-            >
-              <Trash2 :size="15" />
-            </el-button>
-            <span class="bay-hint">{{ bayLabel(bay.type) }} × {{ bay.count }}</span>
-          </div>
-        </div>
-
-        <button type="button" class="add-bay" :disabled="!canAddBay" @click="addBay">
-          <Plus :size="14" />
-          添加柜型
-          <span v-if="!canAddBay">已达 5 面上限</span>
-        </button>
-
-        <div class="options-row">
-          <label class="check-option">
-            <el-checkbox v-model="includeEarthSwitch">配置检修接地开关</el-checkbox>
-          </label>
-          <label class="check-option">
-            <el-checkbox v-model="includeArrester">配置避雷器</el-checkbox>
-          </label>
-          <span class="option-note">生成后仍可自由拖拽、增删设备和导线</span>
-        </div>
-      </section>
-
-      <section v-else class="blank-hint">
+      <section class="blank-hint">
         <div class="blank-sheet">
           <span />
           <span />
@@ -294,7 +133,7 @@ const modeName = computed(() => (mode.value === 'blank' ? '空白画布' : '按�
 
     <template #footer>
       <div class="dialog-footer">
-        <span class="mode-summary">模式 · {{ modeName }}</span>
+        <span class="mode-summary">空白画布 · A3 横向</span>
         <div>
           <el-button :disabled="creating" @click="visible = false">取消</el-button>
           <el-button type="primary" :loading="creating" @click="submit">
@@ -344,73 +183,11 @@ const modeName = computed(() => (mode.value === 'blank' ? '空白画布' : '按�
   padding-right: 4px;
 }
 
-.mode-switch {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px;
-  margin: 6px 0 20px;
-}
-
-.mode-switch button {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 13px 14px;
-  color: var(--ink-soft);
-  background: #fbfcfc;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  cursor: pointer;
-  text-align: left;
-  transition:
-    border-color 0.18s ease,
-    background 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.mode-switch button:hover {
-  border-color: #a9c8c4;
-}
-
-.mode-switch button.active {
-  color: var(--ink);
-  background: #f0f8f6;
-  border-color: #79b8b0;
-  box-shadow: 0 0 0 2px rgba(11, 117, 108, 0.07);
-}
-
-.mode-switch button > span:nth-child(2) {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.mode-switch strong {
-  font-size: 12.5px;
-  font-weight: 600;
-}
-
-.mode-switch small {
-  color: var(--muted);
-  font-size: 10.5px;
-}
-
-.mode-switch svg {
-  color: var(--accent);
-}
-
-.mode-index {
-  color: #a7b5b6;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-}
-
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
+  margin-top: 6px;
 }
 
 .field {
@@ -431,158 +208,6 @@ const modeName = computed(() => (mode.value === 'blank' ? '空白画布' : '按�
 
 .span-2 {
   grid-column: span 2;
-}
-
-.config-section {
-  margin-top: 22px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-}
-
-.section-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.section-head h4 {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.section-head p {
-  margin: 2px 0 0;
-  color: var(--muted);
-  font-size: 10.5px;
-}
-
-.bay-counter {
-  padding: 3px 8px;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border-radius: 4px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-}
-
-.bay-counter.warning {
-  color: #a46116;
-  background: var(--warm-soft);
-}
-
-.bay-table {
-  overflow: hidden;
-  background: #fbfcfc;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-}
-
-.bay-table-head {
-  display: grid;
-  grid-template-columns: 34px 1fr 136px 32px;
-  gap: 10px;
-  align-items: center;
-  padding: 8px 12px;
-  color: var(--muted);
-  background: #f5f8f7;
-  border-bottom: 1px solid #e7eeed;
-  font-size: 10px;
-  letter-spacing: 0.02em;
-}
-
-.bay-table-head span:first-child {
-  grid-column: span 2;
-}
-
-.bay-row {
-  position: relative;
-  display: grid;
-  grid-template-columns: 34px 1fr 136px 32px;
-  gap: 10px;
-  align-items: center;
-  padding: 9px 12px;
-  border-bottom: 1px solid #edf2f1;
-}
-
-.bay-row:last-child {
-  border-bottom: 0;
-}
-
-.row-index {
-  color: #a8b6b7;
-  font-family: var(--font-mono);
-  font-size: 10px;
-}
-
-.bay-hint {
-  position: absolute;
-  right: 52px;
-  bottom: 2px;
-  color: #a3b0b1;
-  font-size: 9px;
-  pointer-events: none;
-}
-
-.remove-button {
-  color: #9caaaa;
-}
-
-.remove-button:hover {
-  color: var(--danger);
-}
-
-.add-bay {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 9px;
-  padding: 8px;
-  color: var(--accent);
-  background: transparent;
-  border: 1px dashed #b9d0cd;
-  border-radius: 7px;
-  cursor: pointer;
-  font-size: 11px;
-  transition: background 0.18s;
-}
-
-.add-bay:hover:not(:disabled) {
-  background: #f2f9f7;
-}
-
-.add-bay:disabled {
-  color: #a7b2b2;
-  border-color: #dde5e4;
-  cursor: not-allowed;
-}
-
-.add-bay span {
-  margin-left: 4px;
-  color: #a1acad;
-  font-size: 9.5px;
-}
-
-.options-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  margin-top: 14px;
-}
-
-.check-option {
-  display: flex;
-  align-items: center;
-}
-
-.option-note {
-  margin-left: auto;
-  color: var(--muted);
-  font-size: 10px;
 }
 
 .blank-hint {
@@ -670,25 +295,7 @@ const modeName = computed(() => (mode.value === 'blank' ? '空白画布' : '按�
   letter-spacing: 0.04em;
 }
 
-.bay-option {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 4px 0;
-}
-
-.bay-option strong {
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.bay-option small {
-  color: var(--muted);
-  font-size: 10px;
-}
-
 @media (max-width: 760px) {
-  .mode-switch,
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -700,18 +307,6 @@ const modeName = computed(() => (mode.value === 'blank' ? '空白画布' : '按�
   .blank-hint {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .bay-table-head {
-    display: none;
-  }
-
-  .bay-row {
-    grid-template-columns: 24px 1fr 105px 30px;
-  }
-
-  .option-note {
-    margin-left: 0;
   }
 }
 </style>

@@ -670,7 +670,6 @@ const formatSavedAt = computed(() => {
           <div class="selection-title">
             <span class="eyebrow">图纸设置</span>
             <h2>{{ store.doc.meta.title || '未命名接线图' }}</h2>
-            <p class="mono">{{ store.diagramCode || 'UNSAVED' }} · R{{ store.revision }}</p>
           </div>
         </header>
 
@@ -780,9 +779,7 @@ const formatSavedAt = computed(() => {
                 @blur="endTextEditing"
               />
             </label>
-            <p class="save-meta">
-              最近保存 {{ formatSavedAt }} · 版本 R{{ store.revision }}
-            </p>
+            <p class="save-meta">最近保存 {{ formatSavedAt }}</p>
           </div>
         </section>
 
