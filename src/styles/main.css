@@ -1,0 +1,294 @@
+:root {
+  --ink: #17282f;
+  --ink-deep: #0f1e25;
+  --ink-soft: #50646c;
+  --muted: #7d8d93;
+  --line: #dbe4e3;
+  --line-strong: #c4d1d0;
+  --surface: #f8faf9;
+  --surface-2: #f1f5f4;
+  --canvas: #e6ebea;
+  --paper: #ffffff;
+  --accent: #0b756c;
+  --accent-strong: #075e57;
+  --accent-soft: #e1f0ed;
+  --warm: #d8952d;
+  --warm-soft: #fbf2df;
+  --danger: #b44a3c;
+  --danger-soft: #f9e9e6;
+  --shadow-sm: 0 1px 2px rgba(15, 30, 37, 0.05);
+  --shadow-md: 0 16px 40px rgba(20, 42, 49, 0.1);
+  --shadow-paper: 0 24px 60px rgba(21, 41, 47, 0.16), 0 2px 6px rgba(21, 41, 47, 0.08);
+  --font-sans: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-mono: 'Cascadia Mono', 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+  --el-color-primary: #0b756c;
+  --el-color-primary-light-3: #459b93;
+  --el-color-primary-light-5: #78b7b1;
+  --el-color-primary-light-7: #b0d5d1;
+  --el-color-primary-light-8: #cde4e1;
+  --el-color-primary-light-9: #e7f3f1;
+  --el-color-primary-dark-2: #075e57;
+  --el-font-family: var(--font-sans);
+  --el-border-radius-base: 6px;
+  --el-border-color: var(--line);
+  --el-text-color-primary: var(--ink);
+  --el-text-color-regular: var(--ink-soft);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  color: var(--ink);
+  background: #c8e5e0;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Element Plus refinements */
+.el-button {
+  font-weight: 500;
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--accent);
+  --el-button-border-color: var(--accent);
+  --el-button-hover-bg-color: var(--accent-strong);
+  --el-button-hover-border-color: var(--accent-strong);
+  --el-button-active-bg-color: var(--accent-strong);
+  --el-button-active-border-color: var(--accent-strong);
+}
+
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
+.el-dialog {
+  --el-dialog-border-radius: 12px;
+  --el-dialog-padding-primary: 24px;
+}
+
+.el-overlay {
+  backdrop-filter: blur(2px);
+}
+
+.el-message {
+  border-radius: 8px;
+}
+
+.el-drawer__header {
+  margin-bottom: 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.el-form-item__label {
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+/* Utility */
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #c6d2d1 transparent;
+}
+
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #c6d2d1;
+  border: 2px solid transparent;
+  border-radius: 99px;
+  background-clip: content-box;
+}
+
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Shared SVG symbol primitives */
+.sym-conductor {
+  fill: none;
+  stroke: var(--sym-ink, #26363e);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sym-inner {
+  stroke-width: 2.2;
+}
+
+.sym-thin {
+  fill: none;
+  stroke: var(--sym-ink, #26363e);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sym-box {
+  fill: var(--sym-paper, #fff);
+  stroke: var(--sym-ink, #26363e);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+
+.sym-ring {
+  fill: none;
+  stroke: var(--sym-ink, #26363e);
+  stroke-width: 2.4;
+}
+
+.sym-dashed {
+  fill: none;
+  stroke: var(--sym-ink, #26363e);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.sym-terminal,
+.sym-junction-dot {
+  fill: var(--sym-ink, #26363e);
+  stroke: none;
+}
+
+/* 系统图中保护电器的固定强调色，可用 --sym-accent 单独覆盖 */
+.sym-protection {
+  stroke: var(--sym-accent, #c53b32);
+}
+
+.sym-protection-fill {
+  fill: var(--sym-accent, #c53b32);
+}
+
+.sym-arc {
+  fill: none;
+  stroke: var(--sym-ink, #26363e);
+  stroke-width: 1.5;
+}
+
+.sym-arrow-head {
+  fill: none;
+  stroke: var(--sym-ink, #26363e);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sym-earth {
+  fill: none;
+  stroke: var(--sym-ink, #26363e);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.sym-earth.sym-small {
+  stroke-width: 1.4;
+}
+
+.sym-coil {
+  fill: none;
+  stroke: var(--sym-ink, #26363e);
+  stroke-width: 1.7;
+}
+
+.sym-plate {
+  stroke-width: 3.2;
+}
+
+.sym-wave {
+  fill: none;
+  stroke: var(--sym-ink, #26363e);
+  stroke-width: 1.8;
+}
+
+.sym-busbar {
+  fill: none;
+  stroke: var(--sym-ink, #1b2a31);
+  stroke-width: 18;
+  stroke-linecap: butt;
+}
+
+.sym-busbar-core {
+  fill: none;
+  stroke: var(--sym-paper, #f3f6f7);
+  stroke-width: 1.2;
+  opacity: 0.3;
+}
+
+.sym-glyph-text {
+  fill: var(--sym-ink, #26363e);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.sym-glyph-text-small {
+  font-size: 18px;
+}
